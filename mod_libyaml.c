@@ -60,6 +60,32 @@ static mp_obj_t write_file(mp_obj_t self_in, mp_obj_t data_in) {
     return n_bytes;
 }
 
+static mp_obj_t parse_value(unsigned char* value){
+
+    const char *value_end = ", ";
+
+    const char *string_mark = "\"";
+    mp_obj_t pval = mp_obj_new_str((const char *)value, strlen((const char *)value));
+
+    mp_obj_t dest[2];
+    mp_load_method(pval, MP_QSTR_isdigit, dest);
+    mp_obj_t isnum = mp_call_method_n_kw(0, 0, dest);
+
+    if (isnum == mp_const_true) {
+
+        return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(value_end, strlen(value_end)));
+    }
+    else {
+        pval = mp_obj_str_binary_op(MP_BINARY_OP_ADD, mp_obj_new_str(string_mark, strlen(string_mark)), pval);
+
+        pval = mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(string_mark, strlen(string_mark)));
+
+        return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(value_end, strlen(value_end)));
+    }
+
+
+}
+
 
 // VERSION
 
@@ -98,7 +124,7 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
     const char *block_end = "}, ";
     const char *seq_end = "], ";
     const char *key_end = "\": ";
-    const char *value_end = "\", ";
+    /* const char *value_end = "\", "; */
 
 
     mp_obj_t yout = mp_obj_new_str(buf, strlen(buf)); 
@@ -254,12 +280,11 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
                 else{
 
 
-                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(key_start, strlen(key_start)));
-                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str((const char *)token.data.scalar.value, strlen((const char *)token.data.scalar.value)));
-
+                /* yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(key_start, strlen(key_start))); */
+                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, parse_value(token.data.scalar.value)); 
                 /* mp_printf(&mp_plat_print, "\"%s\", ", token.data.scalar.value); */ 
 
-                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(value_end, strlen(value_end)));
+                /* yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(value_end, strlen(value_end))); */
 
                 /* mp_printf(&mp_plat_print, "VALUE: %s \n", token.data.scalar.value); */ 
                 }

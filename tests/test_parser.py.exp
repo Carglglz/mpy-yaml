@@ -4,7 +4,7 @@ JSON PARSER TEST:
 {'js_url': '/finex/html/js/', 'pages': [{'html': 'public/welcome.phtml', 'title': 'Welcome', 'act': 'idx'}, {'html': 'public/register.phtml', 'title': 'Register', 'act': 'reg'}, {'html': 'public/login.phtml', 'title': 'Log in', 'act': 'log'}, {'html': 'public/logout.phtml', 'title': 'Log out', 'act': 'out'}], 'img_url': '/finex/html/img/', 'css_url': '/finex/html/style/', 'template_dir': 'html/templ/', 'title': 'Finex 2011', 'default_act': 'idx'}
 JSON: public.yaml [ OK ]
 
-{"name": "Coding Challenges", "challenge": {"name": "YAML Parser", }, "key": "value", "array": [ "1", "2", ], "arrayinline": [ "1", "2", ], "john": {"writes": "Coding Challenges", "loves": "dogs", "hates": "meetings", }, }
+{"name": "Coding Challenges", "challenge": {"name": "YAML Parser", }, "key": "value", "array": [ 1, 2, ], "arrayinline": [ 1, 2, ], "john": {"writes": "Coding Challenges", "loves": "dogs", "hates": "meetings", }, }
 JSON PARSER TEST:
-{'key': 'value', 'name': 'Coding Challenges', 'challenge': {'name': 'YAML Parser'}, 'john': {'hates': 'meetings', 'loves': 'dogs', 'writes': 'Coding Challenges'}, 'array': ['1', '2'], 'arrayinline': ['1', '2']}
+{'key': 'value', 'name': 'Coding Challenges', 'challenge': {'name': 'YAML Parser'}, 'john': {'hates': 'meetings', 'loves': 'dogs', 'writes': 'Coding Challenges'}, 'array': [1, 2], 'arrayinline': [1, 2]}
 JSON: base.yaml [ OK ]

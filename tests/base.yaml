@@ -3,8 +3,8 @@ challenge:
   name: YAML Parser
 key: value
 array:
- - 1
- - 2
+  - 1
+  - 2
 arrayinline: [1, 2]
 john: { writes: Coding Challenges, loves: dogs, hates: meetings }
 

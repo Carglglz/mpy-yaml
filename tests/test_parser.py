@@ -3,7 +3,7 @@ import yaml
 import json
 
 
-for yf in [f for f in os.listdir() if f.endswith(".yaml")]:
+for yf in [f for f in sorted(os.listdir()) if f.endswith(".yaml")]:
     ys = yaml.load(yf)
     print(ys)
 

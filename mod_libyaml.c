@@ -62,7 +62,7 @@ static mp_obj_t write_file(mp_obj_t self_in, mp_obj_t data_in) {
 
 static mp_obj_t parse_value(unsigned char* value){
 
-    const char *value_end = ", ";
+    /* const char *value_end = ", "; */
 
     const char *string_mark = "\"";
     mp_obj_t pval = mp_obj_new_str((const char *)value, strlen((const char *)value));
@@ -72,17 +72,94 @@ static mp_obj_t parse_value(unsigned char* value){
     mp_obj_t isnum = mp_call_method_n_kw(0, 0, dest);
 
     if (isnum == mp_const_true) {
+        return pval;
 
-        return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(value_end, strlen(value_end)));
+        /* return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(value_end, strlen(value_end))); */
     }
     else {
         pval = mp_obj_str_binary_op(MP_BINARY_OP_ADD, mp_obj_new_str(string_mark, strlen(string_mark)), pval);
 
-        pval = mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(string_mark, strlen(string_mark)));
+        return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(string_mark, strlen(string_mark)));
 
-        return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(value_end, strlen(value_end)));
+        /* return mp_obj_str_binary_op(MP_BINARY_OP_ADD, pval, mp_obj_new_str(value_end, strlen(value_end))); */
     }
 
+
+}
+
+static void debug_token(yaml_token_t tok){
+
+    switch(tok.type)
+    {
+
+        case YAML_NO_TOKEN:
+
+        /** A STREAM-START token. */
+        case YAML_STREAM_START_TOKEN:
+
+            mp_printf(&mp_plat_print, "STREAM START\n");break; 
+        /** A STREAM-END token. */
+        case YAML_STREAM_END_TOKEN:
+            mp_printf(&mp_plat_print, "STREAM END\n");break; 
+        /** A VERSION-DIRECTIVE token. */
+        case YAML_VERSION_DIRECTIVE_TOKEN:
+            mp_printf(&mp_plat_print, "VERSION DIRECTIVE\n");break; 
+        /** A TAG-DIRECTIVE token. */
+        case YAML_TAG_DIRECTIVE_TOKEN:
+            mp_printf(&mp_plat_print, "TAG DIRECTIVE\n");break; 
+        /** A DOCUMENT-START token. */
+        case YAML_DOCUMENT_START_TOKEN:
+            mp_printf(&mp_plat_print, "DOCUMENT START\n");break; 
+        /** A DOCUMENT-END token. */
+        case YAML_DOCUMENT_END_TOKEN:
+            mp_printf(&mp_plat_print, "DOCUMENT END\n");break; 
+        /** A BLOCK-SEQUENCE-START token. */
+        case YAML_BLOCK_SEQUENCE_START_TOKEN:
+            mp_printf(&mp_plat_print, "SEQUENCE START\n");break; 
+        /** A BLOCK-MAPPING-START token. */
+        case YAML_BLOCK_MAPPING_START_TOKEN:
+            mp_printf(&mp_plat_print, "MAP START\n");break; 
+        /** A BLOCK-END token. */
+        case YAML_BLOCK_END_TOKEN:
+            mp_printf(&mp_plat_print, "BLOCK END\n");break; 
+        /** A FLOW-SEQUENCE-START token. */
+        case YAML_FLOW_SEQUENCE_START_TOKEN:
+            mp_printf(&mp_plat_print, "FLOW SEQ START\n");break; 
+        /** A FLOW-SEQUENCE-END token. */
+        case YAML_FLOW_SEQUENCE_END_TOKEN:
+            mp_printf(&mp_plat_print, "FLOW SEQ END\n");break; 
+        /** A FLOW-MAPPING-START token. */
+        case YAML_FLOW_MAPPING_START_TOKEN:
+            mp_printf(&mp_plat_print, "FLOW MAP START\n");break; 
+        /** A FLOW-MAPPING-END token. */
+        case YAML_FLOW_MAPPING_END_TOKEN:
+            mp_printf(&mp_plat_print, "FLOW MAP END\n");break; 
+        /** A BLOCK-ENTRY token. */
+        case YAML_BLOCK_ENTRY_TOKEN:
+            mp_printf(&mp_plat_print, "BLOCK ENTRY\n");break; 
+        /** A FLOW-ENTRY token. */
+        case YAML_FLOW_ENTRY_TOKEN:
+            mp_printf(&mp_plat_print, "FLOW ENTRY\n");break; 
+        /** A KEY token. */
+        case YAML_KEY_TOKEN:
+            mp_printf(&mp_plat_print, "KEY\n");break; 
+        /** A VALUE token. */
+        case YAML_VALUE_TOKEN:
+            mp_printf(&mp_plat_print, "VALUE\n");break; 
+        /** An ALIAS token. */
+        case YAML_ALIAS_TOKEN:
+            mp_printf(&mp_plat_print, "ALIAS\n");break; 
+        /** An ANCHOR token. */
+        case YAML_ANCHOR_TOKEN:
+            mp_printf(&mp_plat_print, "ANCHOR\n");break; 
+        /** A TAG token. */
+        case YAML_TAG_TOKEN:
+            mp_printf(&mp_plat_print, "TAG\n");break; 
+        /** A SCALAR token. */
+        case YAML_SCALAR_TOKEN:
+            mp_printf(&mp_plat_print, "SCALAR: ");break; }
+
+            /* mp_printf(&mp_plat_print, "KEY: %s \n", tok.data.scalar.value); } */
 
 }
 
@@ -115,16 +192,18 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
     bool is_key = true;
     bool is_map = true;
     bool is_seq = false;
+    bool is_first = true;
     const char *buf = "";
     const char *stream_start = "\n";
-    const char *stream_end = "}";
+    const char *stream_end = "\n";
     const char *key_start = "\"";
-    const char *seq_start = "[ ";
+    const char *seq_start = "[";
     const char *block_start = "{";
-    const char *block_end = "}, ";
-    const char *seq_end = "], ";
+    const char *block_start_seq = ", {";
+    const char *block_end = "}";
+    const char *seq_end = "]";
     const char *key_end = "\": ";
-    /* const char *value_end = "\", "; */
+    const char *value_next = ", ";
 
 
     mp_obj_t yout = mp_obj_new_str(buf, strlen(buf)); 
@@ -135,6 +214,10 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
     yaml_parser_set_input_string(&parser, (unsigned char *)yfdata, strlen(yfdata));
     do {
         yaml_parser_scan(&parser, &token);
+
+        // DEBUG:
+        /* debug_token(token); */
+
         switch(token.type)
         {
         /* Stream start/end */
@@ -154,7 +237,6 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
                 /* mp_printf(&mp_plat_print, "(Key token)   "); */ 
                 /* mp_printf(&mp_plat_print, "\""); */ 
 
-                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(key_start, strlen(key_start)));
                 break;
         case YAML_VALUE_TOKEN: 
                 is_key = false;
@@ -178,8 +260,11 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
 
         case YAML_FLOW_SEQUENCE_START_TOKEN:
 
+                /* mp_printf(&mp_plat_print, "Start Block (Flow Sequence)\n"); */ 
                 is_seq = true;
                 is_map = false;
+
+                is_first = true;
 
                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(seq_start, strlen(seq_start)));
 
@@ -189,12 +274,16 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
 
                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(seq_end, strlen(seq_end)));
                 is_seq = false;
+                is_first = false;
+                is_map = true;
                 break;
         /** A FLOW-MAPPING-START token. */
         case YAML_FLOW_MAPPING_START_TOKEN:
 
                 is_seq = false;
                 is_map = false;
+
+                is_first = true;
 
                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(block_start, strlen(block_start)));
 
@@ -220,6 +309,7 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
                 /* mp_printf(&mp_plat_print, "[ "); */ 
                 is_seq = true;
                 is_map = false;
+                is_first = true;
 
                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(seq_start, strlen(seq_start)));
 
@@ -239,7 +329,7 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
                 /* mp_printf(&mp_plat_print, "}, "); */              
 
                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(block_end, strlen(block_end)));
-                is_map = false;
+                /* is_map = false; */
 
                 }
                 else{
@@ -249,6 +339,7 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
 
                     yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(seq_end, strlen(seq_end)));
                     is_seq = false;
+                    is_map = true;
                     }
 
                 }
@@ -260,13 +351,34 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
         case YAML_BLOCK_MAPPING_START_TOKEN:  
                 is_map = true;
                 /* mp_printf(&mp_plat_print, "\t[Block mapping]\n"); */            
-                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(block_start, strlen(block_start)));
+                if (is_seq && !is_first){
+                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(block_start_seq, strlen(block_start_seq)));} 
+                else{
+
+                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(block_start, strlen(block_start)));} 
+
+                
+
+                is_first = true;
                 break;
         case YAML_SCALAR_TOKEN:  
+                if (!is_first){ 
+                    if (is_key){
+                        yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(value_next, strlen(value_next)));}
+                    else{
+                        if (is_seq && !is_map){
+
+                        yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(value_next, strlen(value_next)));}
+
+                        }
+                    }
+                
 
 /*                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str((const char *)token.data.scalar.value, strlen((const char *)token.data.scalar.value))); */
 
                 if (is_key){
+
+                yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(key_start, strlen(key_start)));
 
                 yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str((const char *)token.data.scalar.value, strlen((const char *)token.data.scalar.value)));
 
@@ -287,7 +399,12 @@ static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
                 /* yout = mp_obj_str_binary_op(MP_BINARY_OP_ADD, yout, mp_obj_new_str(value_end, strlen(value_end))); */
 
                 /* mp_printf(&mp_plat_print, "VALUE: %s \n", token.data.scalar.value); */ 
+
+                is_first = false;
                 }
+
+                // DEBUG:
+                /* mp_printf(&mp_plat_print, " %s \n", token.data.scalar.value); */ 
                 break;
         /* Others */
         default:

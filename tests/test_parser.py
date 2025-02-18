@@ -2,6 +2,7 @@ import os
 import yaml
 import json
 
+
 for yf in [f for f in os.listdir() if f.endswith(".yaml")]:
     ys = yaml.load(yf)
     print(ys)

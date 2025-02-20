@@ -4,12 +4,18 @@ import json
 
 
 for yf in [f for f in sorted(os.listdir()) if f.endswith(".yaml")]:
-    ys = yaml.load(yf)
-    print(ys)
+    try:
+        print(f"\n--- YAML PARSER TEST: {yf} --- \n")
+        ys = yaml.load(yf)
+        print(ys)
+        print(f"\n--- YAML: {yf} [ OK ] --- \n")
+    except Exception:
+        ys = None
+        print(f"\n-- YAML: {yf} [ FAIL ] --- \n")
 
     try:
-        print("JSON PARSER TEST:")
+        print(f"\n--- JSON PARSER TEST: {yf} --- \n")
         print(json.loads(ys))
-        print(f"JSON: {yf} [ OK ]")
+        print(f"\n--- JSON: {yf} [ OK ] --- \n")
     except Exception:
-        print(f"JSON: {yf} [ FAIL ]")
+        print(f"\n-- JSON: {yf} [ FAIL ] --- \n")

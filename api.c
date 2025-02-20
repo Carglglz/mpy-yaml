@@ -1,12 +1,40 @@
 // This API version uses gc memory functions instead of libc
+// gc_free doesn't support NULL/invalid pointer so this may 
+// cause memory problems .i.e .
+// Assertion failed: (VERIFY_PTR(ptr)), function gc_free, file gc.c, line 946.
 
 #include "libyaml/src/yaml_private.h"
 #include <py/mpconfig.h>
 #include <py/misc.h>
 #include <py/gc.h>
+#include <py/runtime.h>
+#include <string.h>
+#include "mod_libyaml.h"
 
 
+#define BYTES_PER_BLOCK (MICROPY_BYTES_PER_GC_BLOCK)
 
+#define VERIFY_PTR(ptr) ( \
+    ((uintptr_t)(ptr) & (BYTES_PER_BLOCK - 1)) == 0          /* must be aligned on a block */ \
+    && ptr >= (void *)MP_STATE_MEM(area).gc_pool_start      /* must be above start of pool */ \
+    && ptr < (void *)MP_STATE_MEM(area).gc_pool_end         /* must be below end of pool */ \
+    )
+
+
+/* # define ymlstrdup as strdup */
+
+
+/* Duplicate S, returning an identical malloc'd string.  */
+char * ymlstrdup (const char *s){
+
+  size_t len = strlen (s) + 1;
+  void *new = gc_alloc(len, true);
+
+  if (new == NULL)
+    return NULL;
+
+  return (char *) memcpy (new, s, len);
+}
 /*
  * Get the library version.
  */
@@ -56,7 +84,18 @@ yaml_realloc(void *ptr, size_t size)
 YAML_DECLARE(void)
 yaml_free(void *ptr)
 {
-    if (ptr) gc_free(ptr);
+
+    // DEBUG
+/* printf("The value of s is: %p\n", ptr); */
+/* printf("The direction of s is: %p\n", &ptr); */
+
+if (VERIFY_PTR(ptr)) {
+        
+        
+    if(ptr) {
+        gc_free(ptr);
+        };
+    };
 }
 
 /*
@@ -69,7 +108,7 @@ yaml_strdup(const yaml_char_t *str)
     if (!str)
         return NULL;
 
-    return (yaml_char_t *)strdup((char *)str);
+    return (yaml_char_t *)ymlstrdup((char *)str);
 }
 
 /*
@@ -178,6 +217,8 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end)
 /*
  * Create a new parser object.
  */
+
+// TODO: pass input buffer size depending on file size
 
 YAML_DECLARE(int)
 yaml_parser_initialize(yaml_parser_t *parser)

@@ -9,4 +9,12 @@ arrayinline: [1, 2]
 john: { writes: Coding Challenges, loves: dogs, hates: meetings }
 
 
+hello: world
+enable: true
+size:
+  - hi: hello
+    chao: bye
+  - 10
+
+
 

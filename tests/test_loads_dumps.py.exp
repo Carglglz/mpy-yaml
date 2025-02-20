@@ -1,0 +1,10 @@
+{"hello": true, "world": null, "foo": 1, "bar": "bye"}
+{'hello': True, 'foo': 1, 'bar': 'bye', 'world': None}
+---
+hello: true
+foo: 1
+bar: bye
+world: null
+...
+
+{"hello": true, "foo": 1, "bar": "bye", "world": null}

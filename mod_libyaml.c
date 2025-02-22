@@ -13,6 +13,7 @@
 #include <py/mpconfig.h>
 #include <py/misc.h>
 #include "py/objlist.h"
+#include "py/objmodule.h"
 #include "py/objstringio.h"
 #include "py/parsenum.h"
 
@@ -418,7 +419,17 @@ static mp_obj_t mod_yaml_loads(const mp_obj_t str_in){
     /* return mod_json_loads(yout); --> requires non static mod_json_loads */ 
     /* return yout; */
 
-    return mp_obj_new_str_from_utf8_vstr(&vstr);
+    mp_obj_t jsm = mp_module_get_builtin(MP_QSTR_json, true);
+    // data = file.read()
+    mp_obj_t dest[3];
+    mp_load_method(jsm, MP_QSTR_loads, dest);
+
+    dest[2] = mp_obj_new_str_from_utf8_vstr(&vstr);
+    /* dest[2] = data_in; */
+    mp_obj_t dict = mp_call_method_n_kw(1, 0, dest);
+
+    /* return mp_obj_new_str_from_utf8_vstr(&vstr); */
+    return dict;
 
 parser_error:
 
@@ -486,10 +497,23 @@ parser_error:
 static MP_DEFINE_CONST_FUN_OBJ_1(mod_yaml_loads_obj, mod_yaml_loads); 
 
 
-static mp_obj_t mod_yaml_load(const mp_obj_t f_in){
+static mp_obj_t mod_yaml_loadf(const mp_obj_t f_in){
 
     mp_check_self(mp_obj_is_str(f_in));
     return mod_yaml_loads(read_file(f_in));
+}
+
+static MP_DEFINE_CONST_FUN_OBJ_1(mod_yaml_loadf_obj, mod_yaml_loadf); 
+
+static mp_obj_t mod_yaml_load(mp_obj_t file){
+
+    // data = file.read()
+    mp_obj_t dest[2];
+    mp_load_method(file, MP_QSTR_read, dest);
+    mp_obj_t data = mp_call_method_n_kw(0, 0, dest);
+
+    mp_check_self(mp_obj_is_str(data));
+    return mod_yaml_loads(data);
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_1(mod_yaml_load_obj, mod_yaml_load); 
@@ -822,10 +846,10 @@ yaml_emitter_set_output_print(yaml_emitter_t *emitter, void *data)
     emitter->write_handler_data = data;
 }
 
-static mp_obj_t mod_yaml_dumps(mp_obj_t obj) {
-    vstr_t vstr;
-    mp_print_t print;
-    vstr_init_print(&vstr, 8, &print);
+static mp_obj_t mod_yaml_dump_base(mp_obj_t obj, mp_print_t print) {
+    /* vstr_t vstr; */
+    /* mp_print_t print; */
+    /* vstr_init_print(&vstr, 8, &print); */
 
     yaml_emitter_t emitter;
     yaml_event_t event; 
@@ -866,7 +890,7 @@ static mp_obj_t mod_yaml_dumps(mp_obj_t obj) {
 
     yaml_emitter_delete(&emitter);
 
-    return mp_obj_new_str_from_utf8_vstr(&vstr);
+    return mp_const_none;
 
 emitter_error:
     switch (emitter.error)
@@ -894,18 +918,42 @@ emitter_error:
     return mp_const_none;
 
 }
+
+
+static mp_obj_t mod_yaml_dumps(mp_obj_t obj){
+
+    mp_print_t print;
+    vstr_t vstr;
+    vstr_init_print(&vstr, 8, &print);
+    mod_yaml_dump_base(obj, print);
+
+    return mp_obj_new_str_from_utf8_vstr(&vstr);
+}
 static MP_DEFINE_CONST_FUN_OBJ_1(mod_yaml_dumps_obj, mod_yaml_dumps);
 
 
 
-static mp_obj_t mod_yaml_dump(mp_obj_t obj, const mp_obj_t f_in){
+static mp_obj_t mod_yaml_dump(mp_obj_t obj, mp_obj_t stream){
+
+
+    mp_get_stream_raise(stream, MP_STREAM_OP_WRITE);
+    mp_print_t print = {MP_OBJ_TO_PTR(stream), mp_stream_write_adaptor};
+    mod_yaml_dump_base(obj, print);
+
+    return mp_const_none;
+}
+
+static MP_DEFINE_CONST_FUN_OBJ_2(mod_yaml_dump_obj, mod_yaml_dump); 
+
+static mp_obj_t mod_yaml_dumpf(mp_obj_t obj, const mp_obj_t f_in){
+
 
     mp_check_self(mp_obj_is_str(f_in));
 
     return write_file(f_in, mod_yaml_dumps(obj)); 
 }
 
-static MP_DEFINE_CONST_FUN_OBJ_2(mod_yaml_dump_obj, mod_yaml_dump); 
+static MP_DEFINE_CONST_FUN_OBJ_2(mod_yaml_dumpf_obj, mod_yaml_dumpf); 
 // Define all attributes of the module.
 // Table entries are key/value pairs of the attribute name (a string)
 // and the MicroPython object reference.
@@ -916,8 +964,10 @@ static const mp_rom_map_elem_t mp_module_yaml_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_version), MP_ROM_PTR(&version_obj) },
     { MP_ROM_QSTR(MP_QSTR_load), MP_ROM_PTR(&mod_yaml_load_obj) },
     { MP_ROM_QSTR(MP_QSTR_loads), MP_ROM_PTR(&mod_yaml_loads_obj) },
+    { MP_ROM_QSTR(MP_QSTR_loadf), MP_ROM_PTR(&mod_yaml_loadf_obj) },
     { MP_ROM_QSTR(MP_QSTR_dump), MP_ROM_PTR(&mod_yaml_dump_obj) },
     { MP_ROM_QSTR(MP_QSTR_dumps), MP_ROM_PTR(&mod_yaml_dumps_obj) },
+    { MP_ROM_QSTR(MP_QSTR_dumpf), MP_ROM_PTR(&mod_yaml_dumpf_obj) },
 };
 static MP_DEFINE_CONST_DICT(mp_module_yaml_globals, mp_module_yaml_globals_table);
 
